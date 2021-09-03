@@ -791,7 +791,69 @@ Shortest transaction:           0.00
 오토 스케일링이 정상적으로 수행되었음을 확인할 수 있다. 
 *****
 
+@order > kubernetes > deployment.yml
+아래처럼  replicas: 5로 소스 변경
 
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order
+  labels:
+    app: order
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: order
+  template:
+    metadata:
+      labels:
+        app: order
+    spec:
+      containers:
+        - name: order
+          image: 052937454741.dkr.ecr.ap-northeast-1.amazonaws.com/u8-order:latest
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: '/actuator/health'
+              port: 8080
+            initialDelaySeconds: 10
+            timeoutSeconds: 2
+            periodSeconds: 5
+            failureThreshold: 10
+          livenessProbe:
+            httpGet:
+              path: '/actuator/health'
+              port: 8080
+            initialDelaySeconds: 120
+            timeoutSeconds: 2
+            periodSeconds: 5
+            failureThreshold: 5
+```
+
+@ kubectl get pod  조회
+
+```
+root@labs--1339476173:/home/project/fruitstorenew# kubectl get pod             NAME                         READY   STATUS             RESTARTS   AGE
+delivery-64f989599d-wsnwj    1/1     Running            0          25h
+gateway-749574fc88-jf59x     1/1     Running            0          25h
+homepage-69685b8f76-99f9x    1/1     Running            0          23h
+mypage-f95b4876c-fv5dw       1/1     Running            0          7h17m
+order-849df6cfcf-88tnh       1/1     Running            0          100s
+order-849df6cfcf-pr62b       0/1     Running            0          13s
+order-849df6cfcf-pr8dn       1/1     Running            0          100s
+order-849df6cfcf-sk7w2       1/1     Running            0          100s
+order-849df6cfcf-w928k       1/1     Running            0          100s
+payment-65b8847957-nr6sb     0/1     CrashLoopBackOff   12         40m
+php-apache-d4cf67d68-nlddz   1/1     Running            0          56m
+siege                        1/1     Running            0          25h
+```
+@pod 하나 삭제 후 다시 새로운 것으로 생성되는것 확인
+oot@labs--1339476173:/home/project/fruitstorenew# kubectl delete pod/order-849df6cfcf-88tnh
+pod "order-849df6cfcf-88tnh" deleted
 
 *****
 
